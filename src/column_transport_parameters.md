@@ -5,14 +5,14 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.5
+    jupytext_version: 1.16.6
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [remove-cell]
 
 from pathlib import Path
@@ -38,7 +38,7 @@ It occurs due to differences in velocity between different layers of the fluid, 
 To determine the value of these parameters, an experiment is conducted using a non-pore-penetrating tracer.
 The tracer is injected into the column and its concentration at the column outlet is measured and compared to the concentration predicted by simulation results.
 
-```{code-cell}
+```{code-cell} ipython3
 import numpy as np
 data = np.loadtxt('experimental_data/non_pore_penetrating_tracer.csv', delimiter=',')
 
@@ -61,12 +61,12 @@ Arbitrary values can be set for the unknown parameters such as `bed_porosity` an
 In order to model that the non-penetrating tracer does in fact not enter the pore, the `film_diffusion` needs to be set to $0$.
 Moreover, `particle_porosity` will be determined using a separate experiment.
 
-```{code-cell}
+```{code-cell} ipython3
 from CADETProcess.processModel import ComponentSystem
 component_system = ComponentSystem(['Non-penetrating Tracer'])
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 from CADETProcess.processModel import Inlet, Outlet, LumpedRateModelWithPores
 
 feed = Inlet(component_system, name='feed')
@@ -89,7 +89,7 @@ column.film_diffusion = [0]
 outlet = Outlet(component_system, name='outlet')
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 from CADETProcess.processModel import FlowSheet
 
 flow_sheet = FlowSheet(component_system)
@@ -104,7 +104,7 @@ flow_sheet.add_connection(eluent, column)
 flow_sheet.add_connection(column, outlet)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 from CADETProcess.processModel import Process
 
 Q_ml_min = 0.5  # ml/min
@@ -143,7 +143,7 @@ process.add_event(
 
 ### Simulator
 
-```{code-cell}
+```{code-cell} ipython3
 from CADETProcess.simulator import Cadet
 simulator = Cadet()
 
@@ -154,7 +154,7 @@ if __name__ == '__main__':
 
 ### Comparator
 
-```{code-cell}
+```{code-cell} ipython3
 from CADETProcess.comparison import Comparator
 
 comparator = Comparator()
@@ -169,7 +169,7 @@ if __name__ == '__main__':
 
 ### Optimization Problem
 
-```{code-cell}
+```{code-cell} ipython3
 from CADETProcess.optimization import OptimizationProblem
 optimization_problem = OptimizationProblem('bed_porosity_axial_dispersion')
 
@@ -208,20 +208,55 @@ optimization_problem.add_callback(callback, requires=[simulator])
 
 ### Optimizer
 
-```{code-cell}
+```{code-cell} ipython3
 from CADETProcess.optimization import U_NSGA3
 optimizer = U_NSGA3()
+optimizer.n_max_gen = 3
+optimizer.pop_size = 3
+optimizer.n_cores = 3
 ```
 
-```{note}
-For performance reasons, the optimization is currently not run when building the documentation.
-In future, we will try to sideload pre-computed results to also discuss them here.
+## Run Optimization
+
+```{code-cell} ipython3
+optimization_results = optimizer.optimize(
+    optimization_problem,
+    use_checkpoint=False )
 ```
 
+
+### Optimization Progress and Results
+
+The `OptimizationResults` which are returned contain information about the progress of the optimization.
+For example, the attributes `x` and `f` contain the final value(s) of parameters and the objective function.
+
+```{code-cell} ipython3
+print(optimization_results.x)
+print(optimization_results.f)
 ```
-if __name__ == '__main__':
-    optimization_results = optimizer.optimize(
-        optimization_problem,
-        use_checkpoint=True
-    )
+
+After optimization, several figures can be plotted to vizualize the results.
+For example, the convergence plot shows how the function value changes with the number of evaluations.
+
+```{code-cell} ipython3
+optimization_results.plot_convergence()
+```
+
+The `plot_objectives` method shows the objective function values of all evaluated individuals.
+Here, lighter color represent later evaluations.
+Note that by default the values are plotted on a log scale if they span many orders of magnitude.
+To disable this, set `autoscale=False`.
+
+```{code-cell} ipython3
+optimization_results.plot_objectives()
+```
+
+All figures are saved automatically in the `working_directory`.
+Moreover, results are stored in a `.csv` file.
+- The `results_all.csv` file contains information about all evaluated individuals.
+- The `results_last.csv` file contains information about the last generation of evaluated individuals.
+- The `results_pareto.csv` file contains only the best individual(s).
+
+```{code-cell} ipython3
+
 ```
