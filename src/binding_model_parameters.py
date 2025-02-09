@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.16.6
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -310,23 +310,49 @@ if __name__ == '__main__':
     optimization_problem.evaluate_callbacks(ind)
 
 # %% [markdown]
-# ```{note}
-# For performance reasons, the optimization is currently not run when building the documentation.
-# In future, we will try to sideload pre-computed results to also discuss them here.
-# ```
+# ## Optimizer
 
 # %%
-# if __name__ == '__main__':
-#     from CADETProcess.optimization import U_NSGA3
-#
-#     optimizer = U_NSGA3()
-#     optimizer.n_cores = 4
-#     optimizer.pop_size = 50
-#     optimizer.n_max_gen = 5
-#
-#     optimization_results = optimizer.optimize(
-#         optimization_problem,
-#         use_checkpoint=False
-#     )
+if __name__ == '__main__':
+    from CADETProcess.optimization import U_NSGA3
+optimizer = U_NSGA3()
+optimizer.n_max_gen = 3
+optimizer.pop_size = 3
+optimizer.n_cores = 3
+
+# %% [markdown]
+# ## Run Optimization
 
 # %%
+optimization_results = optimizer.optimize(
+    optimization_problem,
+    use_checkpoint=False )
+
+# %% [markdown]
+# ### Optimization Progress and Results
+#
+# The `OptimizationResults` which are returned contain information about the progress of the optimization.
+# For example, the attributes `x` and `f` contain the final value(s) of parameters and the objective function.
+
+# %%
+print(optimization_results.x)
+print(optimization_results.f)
+
+# %% [markdown]
+# After optimization, several figures can be plotted to vizualize the results. For example, the convergence plot shows how the function value changes with the number of evaluations.
+
+# %%
+optimization_results.plot_convergence()
+
+# %% [markdown]
+# The plot_objectives method shows the objective function values of all evaluated individuals. Here, lighter color represent later evaluations. Note that by default the values are plotted on a log scale if they span many orders of magnitude. To disable this, set autoscale=False.
+
+# %%
+optimization_results.plot_objectives()
+
+# %% [markdown]
+# All figures are saved automatically in the `working_directory`.
+# Moreover, results are stored in a `.csv` file.
+# - The `results_all.csv` file contains information about all evaluated individuals.
+# - The `results_last.csv` file contains information about the last generation of evaluated individuals.
+# - The `results_pareto.csv` file contains only the best individual(s).

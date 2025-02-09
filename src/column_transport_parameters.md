@@ -51,7 +51,8 @@ tracer_peak = ReferenceIO(
 )
 
 if __name__ == '__main__':
-    _ = tracer_peak.plot()
+    _ = tracer_peak.plot(x_axis_in_minutes = False)
+    
 ```
 
 ### Reference Model
@@ -224,7 +225,6 @@ optimization_results = optimizer.optimize(
     use_checkpoint=False )
 ```
 
-
 ### Optimization Progress and Results
 
 The `OptimizationResults` which are returned contain information about the progress of the optimization.
@@ -256,7 +256,3 @@ Moreover, results are stored in a `.csv` file.
 - The `results_all.csv` file contains information about all evaluated individuals.
 - The `results_last.csv` file contains information about the last generation of evaluated individuals.
 - The `results_pareto.csv` file contains only the best individual(s).
-
-```{code-cell} ipython3
-
-```

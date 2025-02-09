@@ -5,14 +5,14 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.5
+    jupytext_version: 1.16.6
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [remove-cell]
 
 from pathlib import Path
@@ -28,7 +28,7 @@ This example demonstrates how to estimate SMA binding parameters based on multip
 It assumes familiarity with the `CADETProcess` process models, as introduced in the
 **Fit Column Transport Parameters** example.
 
-```{code-cell}
+```{code-cell} ipython3
 import os
 
 import numpy as np
@@ -45,7 +45,7 @@ from CADETProcess.optimization import OptimizationProblem
 To simplify the creation of multiple `Process` instances with the correct configurations,
 the process creation was wrapped into a function below:
 
-```{code-cell}
+```{code-cell} ipython3
 def create_process(cv_length=30):
     # Component System
     component_system = ComponentSystem()
@@ -138,7 +138,7 @@ def create_binding_model(component_system, final_salt_concentration):
 To run the parameter estimation algorithm, we need experimental data. This function generates _in-silico_ based
 "experimental" data for us to use.
 
-```{code-cell}
+```{code-cell} ipython3
 def create_in_silico_experimental_data():
     def save_csv(results, directory=None, filename=None, units=None, noise_percentage=5):
         if not os.path.exists(directory):
@@ -177,7 +177,7 @@ def create_in_silico_experimental_data():
 
 Below are two convenience functions, written to simplifly loading `references` and creating `comparators`.
 
-```{code-cell}
+```{code-cell} ipython3
 def load_reference(file_name, component_index=2):
     data = np.loadtxt(file_name, delimiter=',')
 
@@ -206,7 +206,7 @@ def create_comparator(reference):
     return comparator
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 if __name__ == '__main__':
     create_in_silico_experimental_data()
 
@@ -308,26 +308,49 @@ if __name__ == '__main__':
     optimization_problem.evaluate_callbacks(ind)
 ```
 
-```{note}
-For performance reasons, the optimization is currently not run when building the documentation.
-In future, we will try to sideload pre-computed results to also discuss them here.
+## Optimizer
+
+```{code-cell} ipython3
+if __name__ == '__main__':
+    from CADETProcess.optimization import U_NSGA3
+optimizer = U_NSGA3()
+optimizer.n_max_gen = 3
+optimizer.pop_size = 3
+optimizer.n_cores = 3
 ```
 
-```{code-cell}
-# if __name__ == '__main__':
-#     from CADETProcess.optimization import U_NSGA3
-#
-#     optimizer = U_NSGA3()
-#     optimizer.n_cores = 4
-#     optimizer.pop_size = 50
-#     optimizer.n_max_gen = 5
-#
-#     optimization_results = optimizer.optimize(
-#         optimization_problem,
-#         use_checkpoint=False
-#     )
+## Run Optimization
+
+```{code-cell} ipython3
+optimization_results = optimizer.optimize(
+    optimization_problem,
+    use_checkpoint=False )
 ```
 
-```{code-cell}
+### Optimization Progress and Results
 
+The `OptimizationResults` which are returned contain information about the progress of the optimization.
+For example, the attributes `x` and `f` contain the final value(s) of parameters and the objective function.
+
+```{code-cell} ipython3
+print(optimization_results.x)
+print(optimization_results.f)
 ```
+
+After optimization, several figures can be plotted to vizualize the results. For example, the convergence plot shows how the function value changes with the number of evaluations.
+
+```{code-cell} ipython3
+optimization_results.plot_convergence()
+```
+
+The plot_objectives method shows the objective function values of all evaluated individuals. Here, lighter color represent later evaluations. Note that by default the values are plotted on a log scale if they span many orders of magnitude. To disable this, set autoscale=False.
+
+```{code-cell} ipython3
+optimization_results.plot_objectives()
+```
+
+All figures are saved automatically in the `working_directory`.
+Moreover, results are stored in a `.csv` file.
+- The `results_all.csv` file contains information about all evaluated individuals.
+- The `results_last.csv` file contains information about the last generation of evaluated individuals.
+- The `results_pareto.csv` file contains only the best individual(s).

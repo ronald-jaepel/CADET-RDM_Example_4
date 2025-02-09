@@ -50,7 +50,8 @@ tracer_peak = ReferenceIO(
 )
 
 if __name__ == '__main__':
-    _ = tracer_peak.plot()
+    _ = tracer_peak.plot(x_axis_in_minutes = False)
+    
 
 # %% [markdown]
 # ### Reference Model
@@ -213,7 +214,6 @@ optimizer.n_cores = 3
 
 # %% [markdown]
 # ## Run Optimization
-#
 
 # %%
 optimization_results = optimizer.optimize(
@@ -221,7 +221,6 @@ optimization_results = optimizer.optimize(
     use_checkpoint=False )
 
 # %% [markdown]
-#
 # ### Optimization Progress and Results
 #
 # The `OptimizationResults` which are returned contain information about the progress of the optimization.
@@ -243,7 +242,6 @@ optimization_results.plot_convergence()
 # Here, lighter color represent later evaluations.
 # Note that by default the values are plotted on a log scale if they span many orders of magnitude.
 # To disable this, set `autoscale=False`.
-#
 
 # %%
 optimization_results.plot_objectives()
@@ -254,6 +252,3 @@ optimization_results.plot_objectives()
 # - The `results_all.csv` file contains information about all evaluated individuals.
 # - The `results_last.csv` file contains information about the last generation of evaluated individuals.
 # - The `results_pareto.csv` file contains only the best individual(s).
-#
-
-# %%
