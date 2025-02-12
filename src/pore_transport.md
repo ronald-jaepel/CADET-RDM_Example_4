@@ -16,7 +16,7 @@ kernelspec:
 
 Pore transport is an important consideration in the modeling of chromatography. The speed in which a tracer is able to pass through the column is dependent on its interaction with the stationary phase. The `particle_porosity` is a chemical property of the beads in the stationary phase. The tracer in the mobile phase must be able to penetrate the pores to interact with the stationary phase. This external mass transfer between bulk volume and particles pores is called `film diffusion`. After entering the pore the tracer is considered to be in the stagnant mobile phase. 
 
-One approach to determine these parameters is the inverse method. By adjusting the values of the parameters in the simulation model and comparing the resulting behavior to the experimental data, the optimal parameter values that match the observed behavior can be found.
+One approach to determine parameters like `particle_porosity` and `film diffusion` is the inverse method. By adjusting the values of the parameters in the simulation model and comparing the resulting behavior to the experimental data, the optimal parameter values that match the observed behavior can be found.
 
 ## Experiment
 
