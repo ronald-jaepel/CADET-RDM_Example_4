@@ -150,7 +150,7 @@ simulator = Cadet()
 
 if __name__ == '__main__':
     simulation_results = simulator.simulate(process)
-    _ = simulation_results.solution.outlet.inlet.plot()
+    _ = simulation_results.solution.outlet.inlet.plot(x_axis_in_minutes = False)
 ```
 
 ### Comparator
@@ -165,7 +165,7 @@ comparator.add_difference_metric(
 )
 
 if __name__ == '__main__':
-    comparator.plot_comparison(simulation_results)
+    comparator.plot_comparison(simulation_results, x_axis_in_minutes = False)
 ```
 
 ### Optimization Problem

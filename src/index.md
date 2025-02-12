@@ -5,9 +5,9 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.5
+    jupytext_version: 1.16.6
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
@@ -17,7 +17,7 @@ kernelspec:
 
 To accurately model a chromatographic system in **CADET-Process**, several steps are necessary.
 First, the system periphery, including components such as tubing and valves, must be characterized to account for any dead volumes that may cause time shifts in the signal, as well as dispersion that can lead to peak broadening
-Next, column parameters such as porosities and axial dispersion need to be determined.
+Next, column and pore parameters such as porosities, axial dispersion and diffusion need to be determined.
 Finally, the binding model parameters must be characterized, as they determine the separation of components.
 
 In the following sections, the steps required to model a chromatographic system in **CADET-Process** are outlined, including how to fit the model to experimental data.

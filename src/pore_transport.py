@@ -14,14 +14,15 @@
 # ---
 
 # %% [markdown]
-# # Fit Pore Transport
+# # Fit Pore Transport Parameters
 #
-# Particle porosity is an important consideration in the modeling of column transport. The speed in which a tracer is able to pass through the column is dependent on its interaction with the stationary phase. The porosity is a chemical property of the particles in the stationary phase. The tracer in the mobile phase must be able to penetrate the pores to interact with the stationary phase.
+# Pore transport is an important consideration in the modeling of chromatography. The speed in which a tracer is able to pass through the column is dependent on its interaction with the stationary phase. The `particle_porosity` is a chemical property of the beads in the stationary phase. The tracer in the mobile phase must be able to penetrate the pores to interact with the stationary phase. This external mass transfer between bulk volume and particles pores is called `film diffusion`. After entering the pore the tracer is considered to be in the stagnant mobile phase. 
 #
+# One approach to determine these parameters is the inverse method. By adjusting the values of the parameters in the simulation model and comparing the resulting behavior to the experimental data, the optimal parameter values that match the observed behavior can be found.
 #
 # ## Experiment
 #
-# To fit the particle porosity an experiment is conducted with acetone as a pore penetrating tracer. The tracer is injected into the column and its concentration at the column outlet is measured and compared to the concentration predicted by simulation results.
+# To fit the pore transport parameters an experiment is conducted with acetone as a pore penetrating tracer. The tracer is injected into the column and its concentration at the column outlet is measured and compared to the concentration predicted by simulation results.
 # - Acetone (pore penetrating tracer './experimental_data/pore_penetrating_tracer.csv')
 # - data: time / s and c / mM
 
@@ -43,7 +44,8 @@ if __name__ == '__main__':
 # %% [markdown]
 # ## Reference Model
 #
-# Here, initial values for `axial_dispersion` and `bed_porosity` are assumed. The `particle_porosity` and  `film_diffusion`  will later be optimized, thus arbitrary values can be set for now. `film_diffusion` is set to a value > 0 m/s to allow for the tracer to enter the pores.
+# Here, initial values for `axial_dispersion` and `bed_porosity` are assumed. The optimization of these parameters can be performed with the simulation of a non-pore-penetrating tracer as described in [Fit Column Transport Parameters] (./column_transport_parameters.md) . 
+# The `particle_porosity` and  `film_diffusion`  will later be optimized, thus arbitrary values can be set for now. `film_diffusion` is set to a value > 0 m/s to allow for the tracer to enter the pores. In the `LumpedRateModelWithPores` pore diffusion is neglegted. The only mass transport inside the particle considered is the `film diffusion`.
 
 # %%
 from CADETProcess.processModel import ComponentSystem
@@ -131,7 +133,7 @@ simulator = Cadet()
 
 if __name__ == '__main__':
     simulation_results = simulator.simulate(process)
-    _ = simulation_results.solution.outlet.inlet.plot()
+    _ = simulation_results.solution.outlet.inlet.plot(x_axis_in_minutes = False)
 
 # %% [markdown]
 # ## Comparator
@@ -146,7 +148,7 @@ comparator.add_difference_metric(
 )
 
 if __name__ == '__main__':
-    comparator.plot_comparison(simulation_results)
+    comparator.plot_comparison(simulation_results, x_axis_in_minutes = False)
 
 # %% [markdown]
 # ## Optimization Problem
