@@ -1,12 +1,12 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: md:myst,py:percent
+#     formats: py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.6
+#       jupytext_version: 1.16.7
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -16,7 +16,7 @@
 # %% [markdown]
 # # Fit Pore Transport Parameters
 #
-# Pore transport is an important consideration in the modeling of chromatography. The speed in which a tracer is able to pass through the column is dependent on its interaction with the stationary phase. The `particle_porosity` is a chemical property of the beads in the stationary phase. The tracer in the mobile phase must be able to penetrate the pores to interact with the stationary phase. This external mass transfer between bulk volume and particles pores is called `film diffusion`. After entering the pore the tracer is considered to be in the stagnant mobile phase. 
+# Pore transport is an important consideration in the modeling of chromatography. The speed in which a tracer is able to pass through the column is dependent on its interaction with the stationary phase. The `particle_porosity` is a chemical property of the beads in the stationary phase. The tracer in the mobile phase must be able to penetrate the pores to interact with the stationary phase. This external mass transfer between bulk volume and particles pores is called `film diffusion`. After entering the pore the tracer is considered to be in the stagnant mobile phase.
 #
 # One approach to determine parameters like `particle_porosity` and `film diffusion` is the inverse method. By adjusting the values of the parameters in the simulation model and comparing the resulting behavior to the experimental data, the optimal parameter values that match the observed behavior can be found.
 #
@@ -28,39 +28,40 @@
 
 # %%
 import numpy as np
-data = np.loadtxt('experimental_data/pore_penetrating_tracer.csv', delimiter=',')
+
+data = np.loadtxt("experimental_data/pore_penetrating_tracer.csv", delimiter=",")
 
 time_experiment = data[:, 0]
 c_experiment = data[:, 1]
 
 from CADETProcess.reference import ReferenceIO
-tracer_peak = ReferenceIO(
-    'Tracer Peak', time_experiment, c_experiment
-)
 
-if __name__ == '__main__':
-    _ = tracer_peak.plot(x_axis_in_minutes = False)
+tracer_peak = ReferenceIO("Tracer Peak", time_experiment, c_experiment)
+
+if __name__ == "__main__":
+    _ = tracer_peak.plot(x_axis_in_minutes=False)
 
 # %% [markdown]
 # ## Reference Model
 #
-# Here, initial values for `axial_dispersion` and `bed_porosity` are assumed. The optimization of these parameters can be performed with the simulation of a non-pore-penetrating tracer as described in [Fit Column Transport Parameters] (./column_transport_parameters.md) . 
+# Here, initial values for `axial_dispersion` and `bed_porosity` are assumed. The optimization of these parameters can be performed with the simulation of a non-pore-penetrating tracer as described in [Fit Column Transport Parameters] (./column_transport_parameters.md) .
 # The `particle_porosity` and  `film_diffusion`  will later be optimized, thus arbitrary values can be set for now. `film_diffusion` is set to a value > 0 m/s to allow for the tracer to enter the pores. In the `LumpedRateModelWithPores` pore diffusion is neglegted. The only mass transport inside the particle considered is the `film diffusion`.
 
 # %%
 from CADETProcess.processModel import ComponentSystem
-component_system = ComponentSystem(['Penetrating Tracer'])
+
+component_system = ComponentSystem(["Penetrating Tracer"])
 
 # %%
 from CADETProcess.processModel import Inlet, Outlet, LumpedRateModelWithPores
 
-feed = Inlet(component_system, name='feed')
+feed = Inlet(component_system, name="feed")
 feed.c = [131.75]
 
-eluent = Inlet(component_system, name='eluent')
+eluent = Inlet(component_system, name="eluent")
 eluent.c = [0]
 
-column = LumpedRateModelWithPores(component_system, name='column')
+column = LumpedRateModelWithPores(component_system, name="column")
 
 column.length = 0.1
 column.diameter = 0.0077
@@ -72,7 +73,7 @@ column.bed_porosity = 0.3
 column.particle_porosity = 0.8
 column.film_diffusion = [1]
 
-outlet = Outlet(component_system, name='outlet')
+outlet = Outlet(component_system, name="outlet")
 
 # %%
 from CADETProcess.processModel import FlowSheet
@@ -92,48 +93,32 @@ flow_sheet.add_connection(column, outlet)
 from CADETProcess.processModel import Process
 
 Q_ml_min = 0.5  # ml/min
-Q_m3_s = Q_ml_min/(60*1e6)
+Q_m3_s = Q_ml_min / (60 * 1e6)
 V_tracer = 50e-9  # m3
 
-process = Process(flow_sheet, 'Tracer')
-process.cycle_time = 15*60
+process = Process(flow_sheet, "Tracer")
+process.cycle_time = 15 * 60
+
+process.add_event("feed_on", "flow_sheet.feed.flow_rate", Q_m3_s, 0)
+process.add_event("feed_off", "flow_sheet.feed.flow_rate", 0, V_tracer / Q_m3_s)
 
 process.add_event(
-    'feed_on',
-    'flow_sheet.feed.flow_rate',
-    Q_m3_s, 0
-)
-process.add_event(
-    'feed_off',
-    'flow_sheet.feed.flow_rate',
-    0,
-    V_tracer/Q_m3_s
+    "feed_water_on", "flow_sheet.eluent.flow_rate", Q_m3_s, V_tracer / Q_m3_s
 )
 
-process.add_event(
-    'feed_water_on',
-    'flow_sheet.eluent.flow_rate',
-     Q_m3_s,
-     V_tracer/Q_m3_s
-)
-
-process.add_event(
-    'eluent_off',
-    'flow_sheet.eluent.flow_rate',
-    0,
-    process.cycle_time
-)
+process.add_event("eluent_off", "flow_sheet.eluent.flow_rate", 0, process.cycle_time)
 
 # %% [markdown]
 # ## Simulator
 
 # %%
 from CADETProcess.simulator import Cadet
+
 simulator = Cadet()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     simulation_results = simulator.simulate(process)
-    _ = simulation_results.solution.outlet.inlet.plot(x_axis_in_minutes = False)
+    _ = simulation_results.solution.outlet.inlet.plot(x_axis_in_minutes=False)
 
 # %% [markdown]
 # ## Comparator
@@ -144,11 +129,13 @@ from CADETProcess.comparison import Comparator
 comparator = Comparator()
 comparator.add_reference(tracer_peak)
 comparator.add_difference_metric(
-    'NRMSE', tracer_peak, 'outlet.outlet',
+    "NRMSE",
+    tracer_peak,
+    "outlet.outlet",
 )
 
-if __name__ == '__main__':
-    comparator.plot_comparison(simulation_results, x_axis_in_minutes = False)
+if __name__ == "__main__":
+    comparator.plot_comparison(simulation_results, x_axis_in_minutes=False)
 
 # %% [markdown]
 # ## Optimization Problem
@@ -156,36 +143,37 @@ if __name__ == '__main__':
 # %%
 from CADETProcess.optimization import OptimizationProblem
 
-optimization_problem = OptimizationProblem('particle_porosity')
+optimization_problem = OptimizationProblem("particle_porosity")
 
 optimization_problem.add_evaluation_object(process)
 
 optimization_problem.add_variable(
-    name='particle_porosity',
-    parameter_path='flow_sheet.column.particle_porosity',
-    lb=0.5, ub=0.99,
-    transform='auto'
+    name="particle_porosity",
+    parameter_path="flow_sheet.column.particle_porosity",
+    lb=0.5,
+    ub=0.99,
+    transform="auto",
 )
 optimization_problem.add_variable(
-    name='film_diffusion',
-    parameter_path='flow_sheet.column.film_diffusion',
-    lb=0.001, ub=0.99,
-    transform='auto'
+    name="film_diffusion",
+    parameter_path="flow_sheet.column.film_diffusion",
+    lb=0.001,
+    ub=0.99,
+    transform="auto",
 )
 
 optimization_problem.add_evaluator(simulator)
 
 optimization_problem.add_objective(
-    comparator,
-    n_objectives=comparator.n_metrics,
-    requires=[simulator]
+    comparator, n_objectives=comparator.n_metrics, requires=[simulator]
 )
 
-def callback(simulation_results, individual, evaluation_object, callbacks_dir='./'):
+
+def callback(simulation_results, individual, evaluation_object, callbacks_dir="./"):
     comparator.plot_comparison(
         simulation_results,
-        file_name=f'{callbacks_dir}/{individual.id}_{evaluation_object}_comparison.png',
-        show=False
+        file_name=f"{callbacks_dir}/{individual.id}_{evaluation_object}_comparison.png",
+        show=False,
     )
 
 
@@ -196,6 +184,7 @@ optimization_problem.add_callback(callback, requires=[simulator])
 
 # %%
 from CADETProcess.optimization import U_NSGA3
+
 optimizer = U_NSGA3()
 optimizer.n_max_gen = 3
 optimizer.pop_size = 3
@@ -205,9 +194,7 @@ optimizer.n_cores = 3
 # ## Run Optimization
 
 # %%
-optimization_results = optimizer.optimize(
-    optimization_problem,
-    use_checkpoint=False )
+optimization_results = optimizer.optimize(optimization_problem, use_checkpoint=False)
 
 # %% [markdown]
 # ### Optimization Progress and Results

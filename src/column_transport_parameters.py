@@ -1,12 +1,12 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,md:myst,py:percent
+#     formats: py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.6
+#       jupytext_version: 1.16.7
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -17,7 +17,7 @@
 from pathlib import Path
 import sys
 
-root_dir = Path('../../../../').resolve()
+root_dir = Path("../../../../").resolve()
 sys.path.append(root_dir.as_posix())
 
 # %% [markdown]
@@ -39,19 +39,19 @@ sys.path.append(root_dir.as_posix())
 
 # %%
 import numpy as np
-data = np.loadtxt('experimental_data/non_pore_penetrating_tracer.csv', delimiter=',')
+
+data = np.loadtxt("experimental_data/non_pore_penetrating_tracer.csv", delimiter=",")
 
 time_experiment = data[:, 0]
 c_experiment = data[:, 1]
 
 from CADETProcess.reference import ReferenceIO
-tracer_peak = ReferenceIO(
-    'Tracer Peak', time_experiment, c_experiment
-)
 
-if __name__ == '__main__':
-    _ = tracer_peak.plot(x_axis_in_minutes = False)
-    
+tracer_peak = ReferenceIO("Tracer Peak", time_experiment, c_experiment)
+
+if __name__ == "__main__":
+    _ = tracer_peak.plot(x_axis_in_minutes=False)
+
 
 # %% [markdown]
 # ### Reference Model
@@ -63,18 +63,19 @@ if __name__ == '__main__':
 
 # %%
 from CADETProcess.processModel import ComponentSystem
-component_system = ComponentSystem(['Non-penetrating Tracer'])
+
+component_system = ComponentSystem(["Non-penetrating Tracer"])
 
 # %%
 from CADETProcess.processModel import Inlet, Outlet, LumpedRateModelWithPores
 
-feed = Inlet(component_system, name='feed')
+feed = Inlet(component_system, name="feed")
 feed.c = [0.0005]
 
-eluent = Inlet(component_system, name='eluent')
+eluent = Inlet(component_system, name="eluent")
 eluent.c = [0]
 
-column = LumpedRateModelWithPores(component_system, name='column')
+column = LumpedRateModelWithPores(component_system, name="column")
 
 column.length = 0.1
 column.diameter = 0.0077
@@ -85,7 +86,7 @@ column.bed_porosity = 0.3
 column.particle_porosity = 0.8
 column.film_diffusion = [0]
 
-outlet = Outlet(component_system, name='outlet')
+outlet = Outlet(component_system, name="outlet")
 
 # %%
 from CADETProcess.processModel import FlowSheet
@@ -105,48 +106,32 @@ flow_sheet.add_connection(column, outlet)
 from CADETProcess.processModel import Process
 
 Q_ml_min = 0.5  # ml/min
-Q_m3_s = Q_ml_min/(60*1e6)
+Q_m3_s = Q_ml_min / (60 * 1e6)
 V_tracer = 50e-9  # m3
 
-process = Process(flow_sheet, 'Tracer')
-process.cycle_time = 15*60
+process = Process(flow_sheet, "Tracer")
+process.cycle_time = 15 * 60
+
+process.add_event("feed_on", "flow_sheet.feed.flow_rate", Q_m3_s, 0)
+process.add_event("feed_off", "flow_sheet.feed.flow_rate", 0, V_tracer / Q_m3_s)
 
 process.add_event(
-    'feed_on',
-    'flow_sheet.feed.flow_rate',
-    Q_m3_s, 0
-)
-process.add_event(
-    'feed_off',
-    'flow_sheet.feed.flow_rate',
-    0,
-    V_tracer/Q_m3_s
+    "feed_water_on", "flow_sheet.eluent.flow_rate", Q_m3_s, V_tracer / Q_m3_s
 )
 
-process.add_event(
-    'feed_water_on',
-    'flow_sheet.eluent.flow_rate',
-     Q_m3_s,
-     V_tracer/Q_m3_s
-)
-
-process.add_event(
-    'eluent_off',
-    'flow_sheet.eluent.flow_rate',
-    0,
-    process.cycle_time
-)
+process.add_event("eluent_off", "flow_sheet.eluent.flow_rate", 0, process.cycle_time)
 
 # %% [markdown]
 # ### Simulator
 
 # %%
 from CADETProcess.simulator import Cadet
+
 simulator = Cadet()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     simulation_results = simulator.simulate(process)
-    _ = simulation_results.solution.outlet.inlet.plot(x_axis_in_minutes = False)
+    _ = simulation_results.solution.outlet.inlet.plot(x_axis_in_minutes=False)
 
 # %% [markdown]
 # ### Comparator
@@ -157,46 +142,52 @@ from CADETProcess.comparison import Comparator
 comparator = Comparator()
 comparator.add_reference(tracer_peak)
 comparator.add_difference_metric(
-    'NRMSE', tracer_peak, 'outlet.outlet',
+    "NRMSE",
+    tracer_peak,
+    "outlet.outlet",
 )
 
-if __name__ == '__main__':
-    comparator.plot_comparison(simulation_results, x_axis_in_minutes = False)
+if __name__ == "__main__":
+    comparator.plot_comparison(simulation_results, x_axis_in_minutes=False)
 
 # %% [markdown]
 # ### Optimization Problem
 
 # %%
 from CADETProcess.optimization import OptimizationProblem
-optimization_problem = OptimizationProblem('bed_porosity_axial_dispersion')
+
+optimization_problem = OptimizationProblem("bed_porosity_axial_dispersion")
 
 optimization_problem.add_evaluation_object(process)
 
 optimization_problem.add_variable(
-    name='bed_porosity', parameter_path='flow_sheet.column.bed_porosity',
-    lb=0.1, ub=0.6,
-    transform='auto'
+    name="bed_porosity",
+    parameter_path="flow_sheet.column.bed_porosity",
+    lb=0.1,
+    ub=0.6,
+    transform="auto",
 )
 
 optimization_problem.add_variable(
-    name='axial_dispersion', parameter_path='flow_sheet.column.axial_dispersion',
-    lb=1e-10, ub=0.1,
-    transform='auto'
+    name="axial_dispersion",
+    parameter_path="flow_sheet.column.axial_dispersion",
+    lb=1e-10,
+    ub=0.1,
+    transform="auto",
 )
 
 optimization_problem.add_evaluator(simulator)
 
 optimization_problem.add_objective(
-    comparator,
-    n_objectives=comparator.n_metrics,
-    requires=[simulator]
+    comparator, n_objectives=comparator.n_metrics, requires=[simulator]
 )
 
-def callback(simulation_results, individual, evaluation_object, callbacks_dir='./'):
+
+def callback(simulation_results, individual, evaluation_object, callbacks_dir="./"):
     comparator.plot_comparison(
         simulation_results,
-        file_name=f'{callbacks_dir}/{individual.id}_{evaluation_object}_comparison.png',
-        show=False
+        file_name=f"{callbacks_dir}/{individual.id}_{evaluation_object}_comparison.png",
+        show=False,
     )
 
 
@@ -207,6 +198,7 @@ optimization_problem.add_callback(callback, requires=[simulator])
 
 # %%
 from CADETProcess.optimization import U_NSGA3
+
 optimizer = U_NSGA3()
 optimizer.n_max_gen = 3
 optimizer.pop_size = 3
@@ -216,9 +208,7 @@ optimizer.n_cores = 3
 # ## Run Optimization
 
 # %%
-optimization_results = optimizer.optimize(
-    optimization_problem,
-    use_checkpoint=False )
+optimization_results = optimizer.optimize(optimization_problem, use_checkpoint=False)
 
 # %% [markdown]
 # ### Optimization Progress and Results
